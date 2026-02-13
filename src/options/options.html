@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Guard - Settings</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+    <div class="options-container">
+        <!-- Header -->
+        <header class="options-header">
+            <div class="header-content">
+                <h1>🛡️ Privacy Guard Settings</h1>
+                <p class="subtitle">Configure your privacy analysis preferences</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="options-main">
+            <!-- General Settings -->
+            <section class="settings-section">
+                <h2>⚙️ General Settings</h2>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label for="autoAnalyze" class="setting-label">Automatic Analysis</label>
+                        <p class="setting-description">Automatically analyze privacy policies when detected</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoAnalyze" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label for="showBadge" class="setting-label">Show Badge</label>
+                        <p class="setting-description">Display badge on extension icon when analysis is available</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="showBadge" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label for="notifications" class="setting-label">Notifications</label>
+                        <p class="setting-description">Show notifications for high-risk policies</p>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="notifications" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </section>
+
+            <!-- Language Settings -->
+            <section class="settings-section">
+                <h2>🌐 Language & Region</h2>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label for="language" class="setting-label">Interface Language</label>
+                        <p class="setting-description">Choose your preferred language</p>
+                    </div>
+                    <select id="language" class="setting-select">
+                        <option value="en">English</option>
+                        <option value="fr">Français</option>
+                    </select>
+                </div>
+            </section>
+
+            <!-- Privacy & Data -->
+            <section class="settings-section">
+                <h2>🔒 Privacy & Data</h2>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label class="setting-label">Cache</label>
+                        <p class="setting-description">Analyses are cached for 7 days</p>
+                    </div>
+                    <button id="clearCache" class="action-button">Clear Cache</button>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <label class="setting-label">Data Export</label>
+                        <p class="setting-description">Export all your analysis data</p>
+                    </div>
+                    <button id="exportData" class="action-button">Export Data</button>
+                </div>
+
+                <div class="privacy-note">
+                    <strong>🛡️ Your Privacy is Protected</strong>
+                    <p>Privacy Guard does not collect any personal data. All analysis happens locally on your device.
+                    </p>
+                </div>
+            </section>
+
+            <!-- About -->
+            <section class="settings-section">
+                <h2>ℹ️ About</h2>
+
+                <div class="about-info">
+                    <p><strong>Version:</strong> 1.0.0</p>
+                    <p><strong>License:</strong> MIT License</p>
+                    <p><strong>GitHub:</strong> <a href="https://github.com/privacy-guard/extension"
+                            target="_blank">privacy-guard/extension</a></p>
+                    <p><strong>Support:</strong> support@privacyguard.app</p>
+                </div>
+
+                <div class="action-buttons">
+                    <a href="https://github.com/privacy-guard/extension" target="_blank" class="link-button">📚
+                        Documentation</a>
+                    <a href="https://github.com/privacy-guard/extension/issues" target="_blank" class="link-button">🐛
+                        Report Bug</a>
+                    <a href="../popup/popup.html" class="link-button">🏠 Open Popup</a>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="options-footer">
+            <p>Made with ❤️ by the Privacy Guard Team</p>
+            <p class="status-message" id="statusMessage"></p>
+        </footer>
+    </div>
+
+    <script src="options.js" type="module"></script>
+</body>
+
+</html>
