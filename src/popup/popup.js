@@ -272,7 +272,7 @@ function displayClauses(clauseDetection) {
 /**
  * Affiche les recommandations
  */
-function displayRecommandations(recommendations) {
+function displayRecommendations(recommendations) {
     if (!recommendations || !Array.isArray(recommendations) || recommendations.length === 0) {
         elements.recommendations.innerHTML = '<li class="pg-recommendation">Aucune recommandation spécifique</li>';
         return;
@@ -364,7 +364,7 @@ function openSettings() {
  * Ouvre la page "À propos"
  */
 function openAbout() {
-    chrome.tabs.create({ url: 'https://github.com/privacy-guard/extension' });
+    chrome.tabs.create({ url: 'https://github.com/simoensm/privacy-guard-extension' });
 }
 
 /**
