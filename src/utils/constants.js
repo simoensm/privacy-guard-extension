@@ -341,21 +341,3 @@ export const LIMITS = {
   ANALYSIS_TIMEOUT: 30000,         // 30 secondes
   NETWORK_TIMEOUT: 10000           // 10 secondes
 };
-
-// ============================================
-// 🌐 DUAL COMPATIBILITY
-// ============================================
-// Expose to global scope for content scripts (non-module context)
-// while maintaining ES6 exports for service worker (module context)
-
-if (typeof window !== 'undefined') {
-  window.LEGAL_PAGE_PATTERNS = LEGAL_PAGE_PATTERNS;
-  window.SENSITIVE_CLAUSES = SENSITIVE_CLAUSES;
-  window.SCORING_CONFIG = SCORING_CONFIG;
-  window.NLP_CONFIG = NLP_CONFIG;
-  window.UI_CONFIG = UI_CONFIG;
-  window.STORAGE_CONFIG = STORAGE_CONFIG;
-  window.SUPPORTED_LANGUAGES = SUPPORTED_LANGUAGES;
-  window.MESSAGE_TYPES = MESSAGE_TYPES;
-  window.LIMITS = LIMITS;
-}

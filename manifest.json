@@ -28,7 +28,7 @@
                 "<all_urls>"
             ],
             "js": [
-                "src/utils/constants.js",
+                "src/content/constants-content.js",
                 "src/content/page-detector.js",
                 "src/content/content-script.js"
             ],
