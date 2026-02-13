@@ -14,7 +14,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "https://github.com/privacy-guard/extension.git"
+        "url": "https://github.com/simoensm/privacy-guard-extension.git"
     },
     "keywords": [
         "privacy",
@@ -31,9 +31,9 @@
     "author": "Privacy Guard Team",
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/privacy-guard/extension/issues"
+        "url": "https://github.com/simoensm/privacy-guard-extension/issues"
     },
-    "homepage": "https://github.com/privacy-guard/extension#readme",
+    "homepage": "https://github.com/simoensm/privacy-guard-extension#readme",
     "devDependencies": {},
     "dependencies": {},
     "engines": {
