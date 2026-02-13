@@ -49,7 +49,7 @@ async function initializeExtension() {
 
     // Ouvrir la page de bienvenue
     chrome.tabs.create({
-        url: 'https://github.com/privacy-guard/extension#welcome'
+        url: 'https://github.com/simoensm/privacy-guard-extension#readme'
     });
 }
 
