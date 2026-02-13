@@ -28,13 +28,14 @@
                 "<all_urls>"
             ],
             "js": [
+                "src/utils/constants.js",
+                "src/content/page-detector.js",
                 "src/content/content-script.js"
             ],
             "css": [
                 "src/ui/styles/content-injected.css"
             ],
-            "run_at": "document_idle",
-            "type": "module"
+            "run_at": "document_idle"
         }
     ],
     "permissions": [

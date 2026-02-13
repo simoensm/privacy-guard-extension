@@ -3,8 +3,8 @@
  * Script injecté dans chaque page pour la détection et l'extraction
  */
 
-import { pageDetector } from './page-detector.js';
-import { MESSAGE_TYPES } from '../utils/constants.js';
+// Use globals from constants.js and page-detector.js (loaded before this script)
+const { pageDetector, MESSAGE_TYPES } = window;
 
 // État du content script
 let pageAnalyzed = false;
