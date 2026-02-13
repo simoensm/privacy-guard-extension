@@ -1,0 +1,128 @@
+{
+    "extensionName": {
+        "message": "Privacy Guard",
+        "description": "Name of the extension"
+    },
+    "extensionDescription": {
+        "message": "Analyze privacy policies, terms & conditions, and GDPR documents automatically. Get clear summaries and transparency scores.",
+        "description": "Description of the extension"
+    },
+    "commandTogglePopup": {
+        "message": "Toggle Privacy Guard popup",
+        "description": "Command to toggle the popup"
+    },
+    "commandAnalyzePage": {
+        "message": "Analyze current page",
+        "description": "Command to analyze the current page"
+    },
+    "analyzing": {
+        "message": "Analyzing...",
+        "description": "Loading state message"
+    },
+    "noAnalysisAvailable": {
+        "message": "No analysis available",
+        "description": "No analysis state title"
+    },
+    "noAnalysisDescription": {
+        "message": "Visit a page with a privacy policy or terms of service to start the analysis.",
+        "description": "No analysis state description"
+    },
+    "analyzeThisPage": {
+        "message": "Analyze this page",
+        "description": "Button to analyze current page"
+    },
+    "transparencyScore": {
+        "message": "Transparency Score",
+        "description": "Label for transparency score"
+    },
+    "riskLevelLow": {
+        "message": "Low Risk",
+        "description": "Low risk level label"
+    },
+    "riskLevelMedium": {
+        "message": "Medium Risk",
+        "description": "Medium risk level label"
+    },
+    "riskLevelHigh": {
+        "message": "High Risk",
+        "description": "High risk level label"
+    },
+    "keyPoints": {
+        "message": "Key Points",
+        "description": "Section title for key points"
+    },
+    "detectedClauses": {
+        "message": "Detected Clauses",
+        "description": "Section title for detected clauses"
+    },
+    "recommendations": {
+        "message": "Recommendations",
+        "description": "Section title for recommendations"
+    },
+    "viewDetailed": {
+        "message": "Detailed Analysis",
+        "description": "Button to view detailed analysis"
+    },
+    "compareMarket": {
+        "message": "Compare",
+        "description": "Button to compare with market average"
+    },
+    "lastAnalyzed": {
+        "message": "Last analyzed",
+        "description": "Label for last analyzed timestamp"
+    },
+    "never": {
+        "message": "Never",
+        "description": "Never analyzed"
+    },
+    "justNow": {
+        "message": "Just now",
+        "description": "Analyzed just now"
+    },
+    "minutesAgo": {
+        "message": "$COUNT$ min ago",
+        "description": "Minutes ago",
+        "placeholders": {
+            "count": {
+                "content": "$1",
+                "example": "5"
+            }
+        }
+    },
+    "hoursAgo": {
+        "message": "$COUNT$h ago",
+        "description": "Hours ago",
+        "placeholders": {
+            "count": {
+                "content": "$1",
+                "example": "2"
+            }
+        }
+    },
+    "daysAgo": {
+        "message": "$COUNT$d ago",
+        "description": "Days ago",
+        "placeholders": {
+            "count": {
+                "content": "$1",
+                "example": "3"
+            }
+        }
+    },
+    "errorOccurred": {
+        "message": "An error occurred",
+        "description": "Generic error message"
+    },
+    "retry": {
+        "message": "Retry",
+        "description": "Retry button"
+    },
+    "about": {
+        "message": "About",
+        "description": "About link"
+    },
+    "settings": {
+        "message": "Settings",
+        "description": "Settings button tooltip"
+    }
+}

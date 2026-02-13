@@ -1,0 +1,88 @@
+/**
+ * Privacy Guard - Content Injected Styles
+ * Styles injectés dans les pages pour le badge flottant
+ */
+
+.privacy-guard-floating-badge {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 2147483647 !important;
+    /* Maximum z-index */
+
+    /* Reset styles to avoid conflicts */
+    all: initial !important;
+
+    /* Reapply specific styles */
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 2147483647 !important;
+
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+    box-sizing: border-box !important;
+}
+
+.privacy-guard-floating-badge * {
+    box-sizing: border-box !important;
+}
+
+/* Animation d'apparition */
+@keyframes privacyGuardFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.privacy-guard-floating-badge {
+    animation: privacyGuardFadeIn 0.4s ease-out !important;
+}
+
+/* Overlay pour analyse en cours */
+.privacy-guard-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 2147483646 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    backdrop-filter: blur(5px) !important;
+}
+
+.privacy-guard-overlay-content {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    color: white !important;
+    padding: 32px !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+    text-align: center !important;
+    max-width: 400px !important;
+}
+
+.privacy-guard-spinner {
+    width: 48px !important;
+    height: 48px !important;
+    border: 4px solid rgba(255, 255, 255, 0.2) !important;
+    border-top-color: #3b82f6 !important;
+    border-radius: 50% !important;
+    animation: privacyGuardSpin 0.8s linear infinite !important;
+    margin: 0 auto 16px !important;
+}
+
+@keyframes privacyGuardSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
