@@ -195,12 +195,19 @@ async function performAnalysis(tabId, url) {
     console.log('[Service Worker] Starting analysis for:', url);
 
     try {
-        // 1. Demander le contenu au content script
-        const contentResponse = await chrome.tabs.sendMessage(tabId, {
-            type: 'GET_PAGE_CONTENT'
-        });
+        // 1. Vérifier que le content script est prêt
+        let contentResponse;
+        try {
+            contentResponse = await chrome.tabs.sendMessage(tabId, {
+                type: 'GET_PAGE_CONTENT'
+            });
+        } catch (connectionError) {
+            // Le content script n'est pas disponible (page système, nouvelle page, etc.)
+            console.warn('[Service Worker] Content script not available:', connectionError.message);
+            throw new Error('Content script not available on this page. Try reloading the page.');
+        }
 
-        if (!contentResponse.success) {
+        if (!contentResponse || !contentResponse.success) {
             throw new Error('Failed to extract page content');
         }
 
