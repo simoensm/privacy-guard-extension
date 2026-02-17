@@ -231,7 +231,7 @@ export const SCORING_CONFIG = {
 
   // Classifications de risque
   RISK_LEVELS: {
-    LOW: { min: 70, max: 100, color: '#22c55e', label: 'Faible' },
+    LOW: { min: 70, max: 100, color: '#37ba83', label: 'Faible' },
     MEDIUM: { min: 40, max: 69, color: '#f59e0b', label: 'Moyen' },
     HIGH: { min: 0, max: 39, color: '#ef4444', label: 'Élevé' }
   }
@@ -281,13 +281,13 @@ export const NLP_CONFIG = {
 
 export const UI_CONFIG = {
   COLORS: {
-    primary: '#3b82f6',
-    success: '#22c55e',
+    primary: '#37ba83',
+    success: '#37ba83',
     warning: '#f59e0b',
     danger: '#ef4444',
-    dark: '#1e293b',
-    light: '#f8fafc',
-    gray: '#64748b'
+    dark: '#202a3a',
+    light: '#ffffff',
+    gray: '#a0a0a0'
   },
 
   ANIMATION_DURATION: 300,         // ms

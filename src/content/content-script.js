@@ -157,7 +157,7 @@ function injectVisualBadge(detection) {
     badge.id = 'privacy-guard-badge';
     badge.className = 'privacy-guard-floating-badge';
 
-    const riskColor = detection.confidence > 0.7 ? '#22c55e' :
+    const riskColor = detection.confidence > 0.7 ? '#37ba83' :
         detection.confidence > 0.4 ? '#f59e0b' : '#ef4444';
 
     badge.innerHTML = `
@@ -166,7 +166,7 @@ function injectVisualBadge(detection) {
       bottom: 20px;
       right: 20px;
       z-index: 999999;
-      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      background: linear-gradient(135deg, #2a3648 0%, #202a3a 100%);
       color: white;
       padding: 12px 16px;
       border-radius: 12px;

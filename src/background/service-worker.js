@@ -168,7 +168,7 @@ async function handleLegalPageDetected(message, sender) {
 
     // Mise à jour du badge
     chrome.action.setBadgeText({ text: '!', tabId });
-    chrome.action.setBadgeBackgroundColor({ color: '#3b82f6', tabId });
+    chrome.action.setBadgeBackgroundColor({ color: '#37ba83', tabId });
 
     // Auto-analyse si activée
     if (settings.autoAnalyze) {
@@ -372,7 +372,7 @@ async function saveAnalysis(url, analysis) {
  */
 function updateBadge(tabId, riskLevel) {
     const config = {
-        LOW: { text: '✓', color: '#22c55e' },
+        LOW: { text: '✓', color: '#37ba83' },
         MEDIUM: { text: '!', color: '#f59e0b' },
         HIGH: { text: '⚠', color: '#ef4444' }
     };

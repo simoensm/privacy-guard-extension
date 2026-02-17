@@ -1,0 +1,220 @@
+&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+    &lt;meta charset="UTF-8"&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+    &lt;title&gt;Privacy Guard - Icon Generator&lt;/title&gt;
+    &lt;style&gt;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #202a3a 0%, #2a3648 100%);
+            color: white;
+            padding: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #37ba83;
+            margin-bottom: 30px;
+        }
+        .icons-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        .icon-card {
+            background: rgba(42, 54, 72, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+        }
+        .icon-preview {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        canvas {
+            display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        button {
+            background: linear-gradient(135deg, #37ba83, #2d9a6b);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(55, 186, 131, 0.3);
+        }
+        .info {
+            background: rgba(55, 186, 131, 0.1);
+            border: 1px solid rgba(55, 186, 131, 0.3);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        .success {
+            color: #37ba83;
+            margin-top: 10px;
+            display: none;
+        }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;h1&gt;🛡️ Privacy Guard Icon Generator&lt;/h1&gt;
+    
+    &lt;div class="info"&gt;
+        &lt;strong&gt;Instructions:&lt;/strong&gt;
+        &lt;p&gt;Click the download buttons below to save each icon size. The icons will be generated from the SVG with the new color scheme.&lt;/p&gt;
+    &lt;/div&gt;
+
+    &lt;div class="icons-container"&gt;
+        &lt;div class="icon-card"&gt;
+            &lt;h3&gt;128x128 Icon&lt;/h3&gt;
+            &lt;div class="icon-preview"&gt;
+                &lt;canvas id="canvas128" width="128" height="128"&gt;&lt;/canvas&gt;
+            &lt;/div&gt;
+            &lt;button onclick="downloadIcon(128)"&gt;Download icon-128.png&lt;/button&gt;
+            &lt;div class="success" id="success128"&gt;✓ Downloaded!&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class="icon-card"&gt;
+            &lt;h3&gt;48x48 Icon&lt;/h3&gt;
+            &lt;div class="icon-preview"&gt;
+                &lt;canvas id="canvas48" width="48" height="48"&gt;&lt;/canvas&gt;
+            &lt;/div&gt;
+            &lt;button onclick="downloadIcon(48)"&gt;Download icon-48.png&lt;/button&gt;
+            &lt;div class="success" id="success48"&gt;✓ Downloaded!&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class="icon-card"&gt;
+            &lt;h3&gt;16x16 Icon&lt;/h3&gt;
+            &lt;div class="icon-preview"&gt;
+                &lt;canvas id="canvas16" width="16" height="16"&gt;&lt;/canvas&gt;
+            &lt;/div&gt;
+            &lt;button onclick="downloadIcon(16)"&gt;Download icon-16.png&lt;/button&gt;
+            &lt;div class="success" id="success16"&gt;✓ Downloaded!&lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+
+    &lt;script&gt;
+        // Draw icon on canvas
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            const scale = size / 128;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+
+            // Background rounded rectangle
+            ctx.fillStyle = '#202a3a';
+            roundRect(ctx, 0, 0, size, size, 24 * scale);
+            ctx.fill();
+
+            // Shield gradient
+            const gradient = ctx.createLinearGradient(
+                64 * scale, 25 * scale,
+                64 * scale, 103 * scale
+            );
+            gradient.addColorStop(0, '#37ba83');
+            gradient.addColorStop(1, '#2d9a6b');
+
+            // Shield path
+            ctx.beginPath();
+            ctx.moveTo(64 * scale, 25 * scale);
+            ctx.lineTo(35 * scale, 35 * scale);
+            ctx.lineTo(35 * scale, 58 * scale);
+            ctx.bezierCurveTo(
+                35 * scale, 77.33 * scale,
+                46.67 * scale, 94.67 * scale,
+                64 * scale, 103 * scale
+            );
+            ctx.bezierCurveTo(
+                81.33 * scale, 94.67 * scale,
+                93 * scale, 77.33 * scale,
+                93 * scale, 58 * scale
+            );
+            ctx.lineTo(93 * scale, 35 * scale);
+            ctx.closePath();
+            
+            // Shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 3 * scale;
+            ctx.shadowOffsetY = 2 * scale;
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+
+            // Shield border
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1 * scale;
+            ctx.stroke();
+
+            // Checkmark
+            ctx.beginPath();
+            ctx.moveTo(54 * scale, 62 * scale);
+            ctx.lineTo(60 * scale, 68 * scale);
+            ctx.lineTo(74 * scale, 50 * scale);
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 6 * scale;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.stroke();
+        }
+
+        // Helper function for rounded rectangle
+        function roundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+
+        // Download icon
+        function downloadIcon(size) {
+            const canvas = document.getElementById(`canvas${size}`);
+            const link = document.createElement('a');
+            link.download = `icon-${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            
+            // Show success message
+            const success = document.getElementById(`success${size}`);
+            success.style.display = 'block';
+            setTimeout(() => {
+                success.style.display = 'none';
+            }, 3000);
+        }
+
+        // Draw all icons on page load
+        window.onload = function() {
+            drawIcon(document.getElementById('canvas128'), 128);
+            drawIcon(document.getElementById('canvas48'), 48);
+            drawIcon(document.getElementById('canvas16'), 16);
+        };
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
