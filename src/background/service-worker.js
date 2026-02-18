@@ -7,6 +7,8 @@ import { MESSAGE_TYPES, STORAGE_CONFIG, LIMITS } from '../utils/constants.js';
 import { nlpEngine } from '../analysis/nlp-engine.js';
 import { clauseDetector } from '../analysis/clause-detector.js';
 import { riskScorer } from '../analysis/risk-scorer.js';
+import { cookieDetector } from '../analysis/cookie-detector.js';
+import { llmService } from '../analysis/llm-service.js';
 
 // Cache des analyses en mémoire
 const analysisCache = new Map();
@@ -38,7 +40,11 @@ async function initializeExtension() {
         autoAnalyze: true,
         showBadge: true,
         language: 'en',
-        notificationsEnabled: true
+        notificationsEnabled: true,
+        enableCookieDetection: true,
+        enableLLM: false,
+        llmProvider: 'gemini',
+        llmApiKey: ''
     };
 
     await chrome.storage.local.set({
@@ -250,17 +256,62 @@ async function performAnalysis(tabId, url) {
 
         const scoreResults = riskScorer.calculateTransparencyScore(analysisData);
 
-        // 5. Génération du résumé
-        const summary = nlpResults.keywords
+        // 5. Cookie & Tracking Detection (if enabled)
+        const settings = await getSettings();
+        let cookieAnalysis = null;
+
+        if (settings.enableCookieDetection) {
+            console.log('[Service Worker] Detecting cookies and trackers...');
+            try {
+                // Request cookie analysis from content script
+                const cookieResponse = await chrome.tabs.sendMessage(tabId, {
+                    type: 'ANALYZE_COOKIES'
+                });
+
+                if (cookieResponse && cookieResponse.success) {
+                    cookieAnalysis = cookieResponse.cookieData;
+                }
+            } catch (error) {
+                console.warn('[Service Worker] Cookie detection failed:', error);
+            }
+        }
+
+        // 6. LLM-Enhanced Summarization (if enabled and configured)
+        let llmSummary = null;
+
+        if (settings.enableLLM && settings.llmApiKey) {
+            console.log('[Service Worker] Generating LLM-powered summary...');
+
+            // Configure LLM service
+            llmService.configure(settings.llmApiKey, settings.llmProvider);
+
+            try {
+                llmSummary = await llmService.summarizeDocument(content, {
+                    maxLength: 500,
+                    focusAreas: ['privacy', 'data collection', 'third parties', 'user rights'],
+                    language: language
+                });
+
+                console.log('[Service Worker] LLM summary generated from:', llmSummary.source);
+            } catch (error) {
+                console.warn('[Service Worker] LLM summarization failed:', error);
+            }
+        }
+
+        // 7. Génération du résumé (fallback ou extraction basique)
+        const basicSummary = nlpResults.keywords
             ? nlpEngine.generateSummary(nlpResults.sentences, 7)
             : [];
 
-        // 6. Construction du résultat final
+        // 8. Construction du résultat final enrichi
         const analysis = {
             url,
             score: scoreResults,
-            summary,
+            summary: llmSummary || basicSummary,
+            llmEnhanced: llmSummary !== null,
+            llmSummary: llmSummary,
             clauseDetection,
+            cookieAnalysis,
             nlpResults: {
                 stats: nlpResults.stats,
                 readability: nlpResults.readability,

@@ -11,6 +11,10 @@ const elements = {
     showBadge: document.getElementById('showBadge'),
     notifications: document.getElementById('notifications'),
     language: document.getElementById('language'),
+    enableCookieDetection: document.getElementById('enableCookieDetection'),
+    enableLLM: document.getElementById('enableLLM'),
+    llmProvider: document.getElementById('llmProvider'),
+    llmApiKey: document.getElementById('llmApiKey'),
     clearCache: document.getElementById('clearCache'),
     exportData: document.getElementById('exportData'),
     statusMessage: document.getElementById('statusMessage')
@@ -43,6 +47,10 @@ async function loadSettings() {
         elements.showBadge.checked = userSettings.showBadge !== false;
         elements.notifications.checked = userSettings.notificationsEnabled !== false;
         elements.language.value = userSettings.language || 'en';
+        elements.enableCookieDetection.checked = userSettings.enableCookieDetection !== false;
+        elements.enableLLM.checked = userSettings.enableLLM || false;
+        elements.llmProvider.value = userSettings.llmProvider || 'gemini';
+        elements.llmApiKey.value = userSettings.llmApiKey || '';
 
     } catch (error) {
         console.error('[Options] Error loading settings:', error);
@@ -59,7 +67,11 @@ async function saveSettings() {
             autoAnalyze: elements.autoAnalyze.checked,
             showBadge: elements.showBadge.checked,
             notificationsEnabled: elements.notifications.checked,
-            language: elements.language.value
+            language: elements.language.value,
+            enableCookieDetection: elements.enableCookieDetection.checked,
+            enableLLM: elements.enableLLM.checked,
+            llmProvider: elements.llmProvider.value,
+            llmApiKey: elements.llmApiKey.value
         };
 
         await chrome.storage.local.set({
@@ -89,6 +101,10 @@ function setupEventListeners() {
     elements.showBadge.addEventListener('change', saveSettings);
     elements.notifications.addEventListener('change', saveSettings);
     elements.language.addEventListener('change', saveSettings);
+    elements.enableCookieDetection.addEventListener('change', saveSettings);
+    elements.enableLLM.addEventListener('change', saveSettings);
+    elements.llmProvider.addEventListener('change', saveSettings);
+    elements.llmApiKey.addEventListener('blur', saveSettings);
 
     // Clear cache button
     elements.clearCache.addEventListener('click', async () => {

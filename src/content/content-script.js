@@ -76,6 +76,10 @@ function handleMessage(message, sender, sendResponse) {
             sendResponse({ detection: detectionResult });
             return false;
 
+        case 'ANALYZE_COOKIES':
+            handleCookieAnalysisRequest(sendResponse);
+            return true;
+
         default:
             return false;
     }
@@ -262,6 +266,170 @@ function detectConsentBanners() {
 
     return { detected: false };
 }
+
+/**
+ * Gère une demande d'analyse des cookies
+ */
+async function handleCookieAnalysisRequest(sendResponse) {
+    try {
+        // Analyse des cookies directement dans le content script
+        // (can't import cookieDetector module in content script, so we run it inline)
+
+        const cookieData = {
+            cookies: analyzeCookiesInline(),
+            localStorage: analyzeLocalStorageInline(),
+            sessionStorage: analyzeSessionStorageInline(),
+            trackers: detectTrackersInline()
+        };
+
+        sendResponse({
+            success: true,
+            cookieData
+        });
+
+    } catch (error) {
+        console.error('[Privacy Guard] Cookie analysis error:', error);
+        sendResponse({
+            success: false,
+            error: error.message
+        });
+    }
+}
+
+/**
+ * Analyse inline des cookies
+ */
+function analyzeCookiesInline() {
+    const cookies = [];
+    const cookieString = document.cookie;
+
+    if (!cookieString) return cookies;
+
+    const cookiePairs = cookieString.split(';');
+
+    for (const pair of cookiePairs) {
+        const [name, value] = pair.trim().split('=');
+
+        if (name) {
+            cookies.push({
+                name: name.trim(),
+                value: value || '',
+                category: categorizeCookieInline(name),
+                isThirdParty: isThirdPartyCookieInline(name)
+            });
+        }
+    }
+
+    return cookies;
+}
+
+/**
+ * Analyse inline du localStorage
+ */
+function analyzeLocalStorageInline() {
+    const items = [];
+
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            items.push({
+                key,
+                size: new Blob([value]).size
+            });
+        }
+    } catch {
+        // Access denied
+    }
+
+    return {
+        count: items.length,
+        totalSize: items.reduce((acc, item) => acc + item.size, 0)
+    };
+}
+
+/**
+ * Analyse inline du sessionStorage
+ */
+function analyzeSessionStorageInline() {
+    const items = [];
+
+    try {
+        for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            const value = sessionStorage.getItem(key);
+            items.push({
+                key,
+                size: new Blob([value]).size
+            });
+        }
+    } catch {
+        // Access denied
+    }
+
+    return {
+        count: items.length,
+        totalSize: items.reduce((acc, item) => acc + item.size, 0)
+    };
+}
+
+/**
+ * Détection inline des trackers
+ */
+function detectTrackersInline() {
+    const trackers = [];
+    const knownTrackerDomains = [
+        'google-analytics.com', 'googletagmanager.com', 'facebook.com/tr',
+        'doubleclick.net', 'hotjar.com', 'mixpanel.com'
+    ];
+
+    // Analyser les scripts
+    document.querySelectorAll('script[src]').forEach(script => {
+        knownTrackerDomains.forEach(domain => {
+            if (script.src.includes(domain)) {
+                trackers.push({
+                    type: 'script',
+                    url: script.src,
+                    domain
+                });
+            }
+        });
+    });
+
+    return trackers;
+}
+
+/**
+ * Catégorisation inline des cookies
+ */
+function categorizeCookieInline(name) {
+    const nameLower = name.toLowerCase();
+
+    if (nameLower.includes('session') || nameLower.includes('csrf') ||
+        nameLower.includes('auth')) {
+        return 'essential';
+    }
+
+    if (nameLower.includes('_ga') || nameLower.includes('analytics')) {
+        return 'analytics';
+    }
+
+    if (nameLower.includes('_fb') || nameLower.includes('ads') ||
+        nameLower.includes('marketing')) {
+        return 'marketing';
+    }
+
+    return 'unknown';
+}
+
+/**
+ * Détection inline des cookies tiers
+ */
+function isThirdPartyCookieInline(name) {
+    const thirdPartyIndicators = ['_ga', '_gid', '_fb', '__utm', 'doubleclick'];
+    return thirdPartyIndicators.some(indicator => name.toLowerCase().includes(indicator));
+}
+
 
 // Initialisation
 initialize();
