@@ -1,6 +1,33 @@
 /**
- * Privacy Guard - Global Constants
- * Définition des constantes utilisées dans toute l'extension
+ * Privacy Guard - GDPR Compliance Scoring Constants
+ * 
+ * NEW PHILOSOPHY:
+ * - A healthy GDPR-compliant website starts at 100 and loses points for violations
+ * - A site that does everything right should score 90-100
+ * - Score reflects GDPR compliance level, NOT how "scary" the policy is
+ * 
+ * GDPR Compliance Criteria (positive signals):
+ * ✓ Has a privacy policy → expected
+ * ✓ Has a cookie policy → expected  
+ * ✓ Mentions user rights (access, deletion, portability) → good
+ * ✓ Has DPO/contact info → good
+ * ✓ Recently updated → good
+ * ✓ Clear language → good
+ * ✓ Easy to find → good
+ * ✓ Consent mechanism present → good
+ * ✓ Data retention periods specified → good
+ * ✓ Legal basis stated → good
+ * 
+ * GDPR Violations (deductions):
+ * ✗ No privacy policy → heavy deduction
+ * ✗ No cookie policy despite using cookies → deduction
+ * ✗ Data selling → heavy deduction
+ * ✗ No opt-out mechanism → deduction
+ * ✗ No user rights mentioned → deduction
+ * ✗ Vague language → deduction
+ * ✗ Third-party sharing without transparency → deduction
+ * ✗ International transfer without safeguards → deduction
+ * ✗ Tracking without consent → deduction
  */
 
 // ============================================
@@ -8,30 +35,29 @@
 // ============================================
 
 export const LEGAL_PAGE_PATTERNS = {
-  // URLs patterns
   URL_PATTERNS: [
     /privacy[-_]?(policy|notice|statement)/i,
     /terms[-_]?(of[-_]?service|and[-_]?conditions|of[-_]?use)/i,
-    /cookie[-_]?(policy|notice|statement)/i,
-    /legal/i,
+    /cookie[-_]?(policy|notice|statement|preferences)/i,
+    /legal([-_]?notice)?/i,
     /gdpr/i,
     /rgpd/i,
     /data[-_]?protection/i,
     /politique[-_]?de[-_]?confidentialite/i,
     /conditions[-_]?generales/i,
-    /mentions[-_]?legales/i
+    /mentions[-_]?legales/i,
+    /datenschutz/i,
+    /impressum/i
   ],
 
-  // Titre de page
   TITLE_KEYWORDS: [
     'privacy policy', 'privacy notice', 'politique de confidentialité',
     'terms of service', 'terms and conditions', 'conditions générales',
     'cookie policy', 'politique de cookies', 'politique des cookies',
     'gdpr', 'rgpd', 'data protection', 'protection des données',
-    'legal notice', 'mentions légales'
+    'legal notice', 'mentions légales', 'terms of use', 'datenschutz'
   ],
 
-  // Liens communs
   LINK_TEXT_PATTERNS: [
     /privacy/i,
     /terms/i,
@@ -39,7 +65,8 @@ export const LEGAL_PAGE_PATTERNS = {
     /legal/i,
     /gdpr/i,
     /confidentialit[ée]/i,
-    /conditions/i
+    /conditions/i,
+    /datenschutz/i
   ]
 };
 
@@ -48,7 +75,6 @@ export const LEGAL_PAGE_PATTERNS = {
 // ============================================
 
 export const SENSITIVE_CLAUSES = {
-  // Partage avec des tiers
   THIRD_PARTY_SHARING: {
     weight: 8,
     keywords: [
@@ -63,37 +89,36 @@ export const SENSITIVE_CLAUSES = {
     ]
   },
 
-  // Revente de données
   DATA_SELLING: {
     weight: 10,
     keywords: [
       'sell your data', 'sell personal information', 'monetize',
-      'vendre vos données', 'commercialiser', 'monétiser'
+      'vendre vos données', 'commercialiser', 'monétiser',
+      'sell your personal'
     ],
     patterns: [
       /sell.*(?:your|personal).*(?:data|information)/i,
       /vend.*(?:vos|les).*donn[ée]es/i,
-      /commercialis.*donn[ée]es/i
+      /commercialis.*donn[ée]es/i,
+      /we\s+(?:may\s+)?sell/i
     ]
   },
 
-  // Publicité ciblée
   TARGETED_ADVERTISING: {
     weight: 6,
     keywords: [
       'targeted advertising', 'personalized ads', 'behavioral advertising',
       'publicité ciblée', 'publicité personnalisée', 'publicité comportementale',
-      'ad targeting', 'profiling'
+      'ad targeting', 'profiling', 'interest-based advertising'
     ],
     patterns: [
-      /(?:targeted|personalized|behavioral).*ad/i,
+      /(?:targeted|personalized|behavioral|interest-based).*ad/i,
       /ad.*(?:targeting|personalization)/i,
       /publicit[ée].*(?:cibl[ée]e|personnalis[ée]e|comportementale)/i,
       /profiling.*(?:for|to).*advertis/i
     ]
   },
 
-  // Conservation des données
   DATA_RETENTION: {
     weight: 5,
     keywords: [
@@ -108,13 +133,13 @@ export const SENSITIVE_CLAUSES = {
     ]
   },
 
-  // Transfert hors UE
   INTERNATIONAL_TRANSFER: {
     weight: 7,
     keywords: [
       'international transfer', 'outside the EU', 'outside European Union',
       'third countries', 'transfert international', 'hors UE',
-      'pays tiers', 'États-Unis', 'United States'
+      'pays tiers', 'États-Unis', 'United States',
+      'standard contractual clauses', 'adequacy decision'
     ],
     patterns: [
       /transfer.*(?:outside|to).*(?:EU|European Union|EEA)/i,
@@ -124,7 +149,6 @@ export const SENSITIVE_CLAUSES = {
     ]
   },
 
-  // Arbitrage obligatoire
   MANDATORY_ARBITRATION: {
     weight: 9,
     keywords: [
@@ -139,7 +163,6 @@ export const SENSITIVE_CLAUSES = {
     ]
   },
 
-  // Limitation de responsabilité
   LIABILITY_LIMITATION: {
     weight: 6,
     keywords: [
@@ -156,7 +179,6 @@ export const SENSITIVE_CLAUSES = {
     ]
   },
 
-  // Données sensibles
   SENSITIVE_DATA_COLLECTION: {
     weight: 9,
     keywords: [
@@ -171,7 +193,6 @@ export const SENSITIVE_CLAUSES = {
     ]
   },
 
-  // Géolocalisation
   GEOLOCATION: {
     weight: 7,
     keywords: [
@@ -187,53 +208,175 @@ export const SENSITIVE_CLAUSES = {
     ]
   },
 
-  // Droits utilisateur
   USER_RIGHTS: {
-    weight: -5, // Poids négatif = positif pour le score
+    weight: -5,
     keywords: [
       'right to access', 'right to deletion', 'right to rectification',
       'droit d\'accès', 'droit à l\'effacement', 'droit de rectification',
-      'data portability', 'portabilité des données'
+      'data portability', 'portabilité des données',
+      'right to erasure', 'right to object', 'right to restrict',
+      'withdraw consent', 'droit d\'opposition'
     ],
     patterns: [
-      /right.*(?:access|deletion|erasure|rectification|portability)/i,
-      /droit.*(?:acc[èe]s|effacement|rectification|portabilit[ée])/i,
-      /you (?:can|may).*(?:delete|access|download).*data/i
+      /right.*(?:access|deletion|erasure|rectification|portability|object|restrict)/i,
+      /droit.*(?:acc[èe]s|effacement|rectification|portabilit[ée]|opposition)/i,
+      /you (?:can|may).*(?:delete|access|download|request).*data/i,
+      /withdraw.*consent/i
     ]
   }
 };
 
 // ============================================
-// 🎯 SYSTÈME DE SCORING
+// 🎯 GDPR COMPLIANCE SCORING SYSTEM (v2)
 // ============================================
 
 export const SCORING_CONFIG = {
-  // Score de base
-  BASE_SCORE: 50,
+  // Start with perfect score — deductions for violations
+  BASE_SCORE: 100,
 
-  // Multiplicateurs
-  MULTIPLIERS: {
-    HAS_PRIVACY_POLICY: 1.1,      // +10% si politique de confidentialité présente
-    HAS_COOKIE_POLICY: 1.05,      // +5% si politique de cookies
-    CLEAR_LANGUAGE: 1.15,         // +15% si langage clair (score Flesch > 60)
-    SHORT_DOCUMENT: 1.1,          // +10% si document court (< 5000 mots)
-    EASY_TO_FIND: 1.05            // +5% si facile à trouver
+  // ================================
+  // GDPR COMPLIANCE CHECKLIST
+  // Each item, if present, prevents a deduction
+  // If missing, the deduction is applied
+  // ================================
+  GDPR_CHECKLIST: {
+    // --- Document Availability (max -25) ---
+    HAS_PRIVACY_POLICY: {
+      deductionIfMissing: -25,
+      label: 'Privacy Policy available',
+      labelFr: 'Politique de confidentialité disponible'
+    },
+    HAS_COOKIE_POLICY: {
+      deductionIfMissing: -10,
+      label: 'Cookie Policy available',
+      labelFr: 'Politique de cookies disponible'
+    },
+
+    // --- User Rights (max -20) ---
+    MENTIONS_USER_RIGHTS: {
+      deductionIfMissing: -15,
+      label: 'User rights mentioned (access, deletion, portability)',
+      labelFr: 'Droits des utilisateurs mentionnés'
+    },
+    RIGHT_TO_OPT_OUT: {
+      deductionIfMissing: -5,
+      label: 'Right to opt-out/withdraw consent',
+      labelFr: 'Droit de retrait du consentement'
+    },
+
+    // --- Transparency (max -15) ---
+    HAS_CONTACT_INFO: {
+      deductionIfMissing: -8,
+      label: 'DPO/Contact information provided',
+      labelFr: 'Coordonnées DPO/Contact fournies'
+    },
+    CLEAR_LANGUAGE: {
+      deductionIfMissing: -7,
+      label: 'Clear, readable language',
+      labelFr: 'Langage clair et lisible'
+    },
+
+    // --- Consent Mechanism (max -15) ---
+    HAS_CONSENT_MECHANISM: {
+      deductionIfMissing: -10,
+      label: 'Cookie consent mechanism present',
+      labelFr: 'Mécanisme de consentement cookies'
+    },
+    CONSENT_HAS_REJECT: {
+      deductionIfMissing: -5,
+      label: 'Consent banner allows reject/decline',
+      labelFr: 'Bannière permet le refus des cookies'
+    },
+
+    // --- Data Practices (max -15) ---
+    SPECIFIES_RETENTION: {
+      deductionIfMissing: -5,
+      label: 'Data retention periods specified',
+      labelFr: 'Durées de conservation spécifiées'
+    },
+    SPECIFIES_LEGAL_BASIS: {
+      deductionIfMissing: -5,
+      label: 'Legal basis for processing stated',
+      labelFr: 'Base légale du traitement indiquée'
+    },
+    EASY_TO_FIND: {
+      deductionIfMissing: -3,
+      label: 'Policy easy to find (footer/header link)',
+      labelFr: 'Politique facile à trouver'
+    },
+    RECENTLY_UPDATED: {
+      deductionIfMissing: -2,
+      label: 'Policy recently updated (< 2 years)',
+      labelFr: 'Politique récemment mise à jour'
+    }
   },
 
-  // Pénalités
-  PENALTIES: {
-    VAGUE_LANGUAGE: -10,           // Langage vague
-    VERY_LONG: -15,                // Très long document (> 10000 mots)
-    HARD_TO_FIND: -10,             // Difficile à trouver
-    NO_CONTACT_INFO: -5,           // Pas d'info de contact
-    OUTDATED: -10                  // Dernière mise à jour > 2 ans
+  // ================================
+  // VIOLATION PENALTIES
+  // Applied when concerning practices are detected
+  // ================================
+  VIOLATION_PENALTIES: {
+    DATA_SELLING: {
+      penalty: -20,
+      label: '⚠️ Data selling detected',
+      labelFr: '⚠️ Vente de données détectée'
+    },
+    EXCESSIVE_TRACKING: {
+      penalty: -10,
+      threshold: 3, // more than 3 trackers
+      label: '⚠️ Excessive tracking',
+      labelFr: '⚠️ Traçage excessif'
+    },
+    NO_OPT_OUT_TRACKERS: {
+      penalty: -8,
+      label: '⚠️ Trackers without opt-out',
+      labelFr: '⚠️ Traceurs sans option de refus'
+    },
+    SENSITIVE_DATA_NO_CONSENT: {
+      penalty: -15,
+      label: '⚠️ Sensitive data collection detected',
+      labelFr: '⚠️ Collecte de données sensibles'
+    },
+    INTERNATIONAL_TRANSFER_NO_SAFEGUARDS: {
+      penalty: -8,
+      label: '⚠️ International transfer without stated safeguards',
+      labelFr: '⚠️ Transfert international sans garanties'
+    },
+    MANDATORY_ARBITRATION: {
+      penalty: -10,
+      label: '⚠️ Mandatory arbitration clause',
+      labelFr: '⚠️ Clause d\'arbitrage obligatoire'
+    },
+    VAGUE_LANGUAGE: {
+      penalty: -5,
+      label: 'Vague/unclear language used',
+      labelFr: 'Langage vague/imprécis'
+    },
+    VERY_LONG_DOCUMENT: {
+      penalty: -3,
+      threshold: 10000, // words
+      label: 'Excessively long document',
+      labelFr: 'Document excessivement long'
+    },
+    THIRD_PARTY_SHARING: {
+      penalty: -5,
+      label: 'Third-party data sharing',
+      labelFr: 'Partage de données avec tiers'
+    }
   },
 
-  // Classifications de risque
+  // ================================
+  // RISK LEVELS — Aligned with GDPR compliance
+  // 90-100: Excellent (fully GDPR compliant)
+  // 70-89:  Good (minor issues)
+  // 50-69:  Concerning (notable gaps)
+  // 0-49:   Poor (major GDPR violations)
+  // ================================
   RISK_LEVELS: {
-    LOW: { min: 70, max: 100, color: '#37ba83', label: 'Faible' },
-    MEDIUM: { min: 40, max: 69, color: '#f59e0b', label: 'Moyen' },
-    HIGH: { min: 0, max: 39, color: '#ef4444', label: 'Élevé' }
+    EXCELLENT: { min: 90, max: 100, color: '#22c55e', label: 'Excellent', labelFr: 'Excellent' },
+    GOOD: { min: 70, max: 89, color: '#37ba83', label: 'Good', labelFr: 'Bon' },
+    CONCERNING: { min: 50, max: 69, color: '#f59e0b', label: 'Concerning', labelFr: 'Préoccupant' },
+    POOR: { min: 0, max: 49, color: '#ef4444', label: 'Poor', labelFr: 'Insuffisant' }
   }
 };
 
@@ -242,7 +385,6 @@ export const SCORING_CONFIG = {
 // ============================================
 
 export const NLP_CONFIG = {
-  // Stopwords (mots à ignorer)
   STOPWORDS_EN: [
     'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
     'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
@@ -260,19 +402,33 @@ export const NLP_CONFIG = {
     'ils', 'elles', 'qui', 'que', 'quoi', 'dont', 'où', 'quand', 'comment'
   ],
 
-  // Paramètres de résumé
   SUMMARY: {
-    MAX_SENTENCES: 7,              // Max 7 points clés
-    MIN_SENTENCE_LENGTH: 30,       // Longueur min d'une phrase
-    MAX_SENTENCE_LENGTH: 150       // Longueur max d'une phrase
+    MAX_SENTENCES: 7,
+    MIN_SENTENCE_LENGTH: 30,
+    MAX_SENTENCE_LENGTH: 150
   },
 
-  // Seuils de confiance
   CONFIDENCE_THRESHOLDS: {
     HIGH: 0.8,
     MEDIUM: 0.5,
     LOW: 0.3
-  }
+  },
+
+  // Legal basis keywords for GDPR scoring
+  LEGAL_BASIS_KEYWORDS: [
+    'legitimate interest', 'consent', 'contractual necessity',
+    'legal obligation', 'vital interests', 'public interest',
+    'intérêt légitime', 'consentement', 'nécessité contractuelle',
+    'obligation légale', 'article 6', 'article 9', 'lawful basis'
+  ],
+
+  // Opt-out keywords
+  OPT_OUT_KEYWORDS: [
+    'opt out', 'opt-out', 'unsubscribe', 'withdraw consent',
+    'do not sell', 'do not share', 'manage preferences',
+    'se désinscrire', 'retirer le consentement',
+    'gérer les préférences', 'refuser'
+  ]
 };
 
 // ============================================
@@ -281,8 +437,8 @@ export const NLP_CONFIG = {
 
 export const UI_CONFIG = {
   COLORS: {
-    primary: '#37ba83',
-    success: '#37ba83',
+    excellent: '#22c55e',
+    good: '#37ba83',
     warning: '#f59e0b',
     danger: '#ef4444',
     dark: '#202a3a',
@@ -290,12 +446,13 @@ export const UI_CONFIG = {
     gray: '#a0a0a0'
   },
 
-  ANIMATION_DURATION: 300,         // ms
+  ANIMATION_DURATION: 300,
 
   BADGE_ICONS: {
-    LOW_RISK: '✓',
-    MEDIUM_RISK: '!',
-    HIGH_RISK: '⚠'
+    EXCELLENT: '✓',
+    GOOD: '✓',
+    CONCERNING: '!',
+    POOR: '⚠'
   }
 };
 
@@ -304,7 +461,7 @@ export const UI_CONFIG = {
 // ============================================
 
 export const STORAGE_CONFIG = {
-  CACHE_DURATION: 7 * 24 * 60 * 60 * 1000,  // 7 jours en ms
+  CACHE_DURATION: 7 * 24 * 60 * 60 * 1000,
   MAX_CACHE_ENTRIES: 100,
 
   KEYS: {
@@ -338,6 +495,7 @@ export const MESSAGE_TYPES = {
 
 export const LIMITS = {
   MAX_DOCUMENT_SIZE: 500000,       // 500KB max
-  ANALYSIS_TIMEOUT: 30000,         // 30 secondes
-  NETWORK_TIMEOUT: 10000           // 10 secondes
+  ANALYSIS_TIMEOUT: 30000,         // 30 seconds
+  NETWORK_TIMEOUT: 15000,          // 15 seconds (for fetching remote pages)
+  MAX_PRIVACY_PAGES_TO_FETCH: 3    // Max number of remote privacy pages to fetch
 };

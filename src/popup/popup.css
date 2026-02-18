@@ -278,6 +278,32 @@ body::-webkit-scrollbar-thumb:hover {
   transition: all var(--transition-base);
 }
 
+/* --- 4-tier risk badges --- */
+.pg-risk-badge.excellent {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.4);
+}
+
+.pg-risk-badge.good {
+  background: rgba(55, 186, 131, 0.15);
+  color: var(--color-success);
+  border: 1px solid rgba(55, 186, 131, 0.3);
+}
+
+.pg-risk-badge.concerning {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--color-warning);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.pg-risk-badge.poor {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Legacy support */
 .pg-risk-badge.low {
   background: rgba(34, 197, 94, 0.15);
   color: var(--color-success);
@@ -336,6 +362,125 @@ body::-webkit-scrollbar-thumb:hover {
   padding: 2px 8px;
   border-radius: var(--radius-full);
   margin-left: auto;
+}
+
+/* ========================================
+   GDPR COMPLIANCE CHECKLIST
+======================================== */
+.pg-gdpr-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+}
+
+.pg-gdpr-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pg-check-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.4;
+  transition: background var(--transition-fast);
+}
+
+.pg-check-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pg-check-icon {
+  flex-shrink: 0;
+  font-size: 14px;
+  width: 20px;
+  text-align: center;
+}
+
+.pg-check-label {
+  flex: 1;
+  color: var(--color-text-secondary);
+}
+
+.pg-check-pass .pg-check-label {
+  color: var(--color-text-secondary);
+}
+
+.pg-check-fail .pg-check-label {
+  color: var(--color-warning);
+}
+
+.pg-check-violation .pg-check-label {
+  color: var(--color-danger);
+}
+
+.pg-check-deduction {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--color-danger);
+}
+
+.pg-violations-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-danger);
+  margin-top: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* ========================================
+   FETCHED PAGES
+======================================== */
+.pg-fetched-pages {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
+}
+
+.pg-fetched-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.pg-fetched-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+}
+
+.pg-fetched-category {
+  flex-shrink: 0;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.pg-fetched-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.pg-fetched-link:hover {
+  text-decoration: underline;
 }
 
 /* ========================================
@@ -513,6 +658,15 @@ body::-webkit-scrollbar-thumb:hover {
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-lg);
+}
+
+/* ========================================
+   LOADING SUB-TEXT
+======================================== */
+.pg-loading-sub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: -8px;
 }
 
 /* ========================================

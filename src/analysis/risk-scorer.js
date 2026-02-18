@@ -1,9 +1,20 @@
 /**
- * Privacy Guard - Risk Scorer
- * Système de calcul du score de transparence et du niveau de risque
+ * Privacy Guard - GDPR Risk Scorer v2
+ * 
+ * PHILOSOPHY: Score = 100 - (missing GDPR requirements) - (active violations)
+ * A GDPR-compliant site that:
+ *   - Has a privacy policy ✓
+ *   - Has a cookie policy ✓
+ *   - Mentions user rights ✓
+ *   - Has clear language ✓
+ *   - Has contact info ✓
+ *   - Has consent mechanism ✓
+ *   - Specifies retention periods ✓
+ *   - Specifies legal basis ✓
+ * Should score 90-100.
  */
 
-import { SCORING_CONFIG } from '../utils/constants.js';
+import { SCORING_CONFIG, NLP_CONFIG } from '../utils/constants.js';
 
 export class RiskScorer {
     constructor() {
@@ -11,445 +22,504 @@ export class RiskScorer {
     }
 
     /**
-     * Calcule le score de transparence global
-     * @param {Object} analysisData - Données d'analyse complètes
-     * @returns {Object} Score et métadonnées
+     * Calculate the GDPR compliance score
+     * @param {Object} analysisData - Complete analysis data
+     * @returns {Object} Score, risk level, breakdown, recommendations
      */
     calculateTransparencyScore(analysisData) {
         const {
             nlpResults,
             clauseDetection,
             documentMeta,
-            pageInfo
+            pageInfo,
+            cookieAnalysis,
+            consentBanner,
+            fetchedPages
         } = analysisData;
 
-        // Score de base
+        // Start with 100
         let score = this.config.BASE_SCORE;
 
-        // Application des multiplicateurs positifs
-        score = this.applyPositiveMultipliers(score, documentMeta, pageInfo);
+        // Track all deductions and passes for breakdown
+        const checklistResults = {};
+        const violationResults = {};
 
-        // Application des pénalités basées sur les clauses
-        score = this.applyClausePenalties(score, clauseDetection);
+        // ===============================
+        // STEP 1: GDPR COMPLIANCE CHECKLIST
+        // ===============================
+        score = this.evaluateGDPRChecklist(
+            score, analysisData, checklistResults
+        );
 
-        // Application des pénalités basées sur le document
-        score = this.applyDocumentPenalties(score, nlpResults, documentMeta);
+        // ===============================
+        // STEP 2: VIOLATION PENALTIES
+        // ===============================
+        score = this.evaluateViolations(
+            score, analysisData, violationResults
+        );
 
-        // Bonus pour la lisibilité
-        score = this.applyReadabilityBonus(score, nlpResults.readability);
-
-        // Normalisation entre 0 et 100
+        // Clamp between 0 and 100
         score = Math.max(0, Math.min(100, Math.round(score)));
 
-        // Détermination du niveau de risque
+        // Determine risk level
         const riskLevel = this.determineRiskLevel(score);
 
-        // Calcul de la confiance du score
+        // Calculate confidence
         const confidence = this.calculateScoreConfidence(analysisData);
 
         return {
             score,
             riskLevel,
             confidence,
-            breakdown: this.getScoreBreakdown(analysisData),
-            recommendations: this.generateRecommendations(score, clauseDetection)
+            breakdown: {
+                baseScore: this.config.BASE_SCORE,
+                checklist: checklistResults,
+                violations: violationResults,
+                finalScore: score
+            },
+            recommendations: this.generateRecommendations(
+                score, checklistResults, violationResults, clauseDetection
+            )
         };
     }
 
     /**
-     * Applique les multiplicateurs positifs
-     * @param {number} baseScore - Score de base
-     * @param {Object} documentMeta - Métadonnées du document
-     * @param {Object} pageInfo - Informations de la page
-     * @returns {number} Score ajusté
+     * Evaluate GDPR compliance checklist
+     * Each missing requirement results in a deduction
      */
-    applyPositiveMultipliers(baseScore, documentMeta, pageInfo) {
-        let score = baseScore;
-        const multipliers = this.config.MULTIPLIERS;
+    evaluateGDPRChecklist(score, data, results) {
+        const { nlpResults, clauseDetection, documentMeta, pageInfo,
+            cookieAnalysis, consentBanner, fetchedPages } = data;
+        const checklist = this.config.GDPR_CHECKLIST;
+        const text = data.rawContent || '';
+        const lowerText = text.toLowerCase();
 
-        // Présence d'une politique de confidentialité
-        if (documentMeta.hasPrivacyPolicy) {
-            score *= multipliers.HAS_PRIVACY_POLICY;
-        }
+        // --- HAS_PRIVACY_POLICY ---
+        const hasPrivacyPolicy = documentMeta.hasPrivacyPolicy ||
+            (fetchedPages && fetchedPages.some(p => p.category === 'PRIVACY_POLICY'));
+        this._checkItem(results, 'HAS_PRIVACY_POLICY', checklist.HAS_PRIVACY_POLICY, (score_ref) => {
+            return hasPrivacyPolicy;
+        });
+        if (!hasPrivacyPolicy) score += checklist.HAS_PRIVACY_POLICY.deductionIfMissing;
 
-        // Présence d'une politique de cookies
-        if (documentMeta.hasCookiePolicy) {
-            score *= multipliers.HAS_COOKIE_POLICY;
-        }
+        // --- HAS_COOKIE_POLICY ---
+        const hasCookiePolicy = documentMeta.hasCookiePolicy ||
+            (fetchedPages && fetchedPages.some(p => p.category === 'COOKIE_POLICY'));
+        this._checkItem(results, 'HAS_COOKIE_POLICY', checklist.HAS_COOKIE_POLICY, () => {
+            return hasCookiePolicy;
+        });
+        if (!hasCookiePolicy) score += checklist.HAS_COOKIE_POLICY.deductionIfMissing;
 
-        // Document court et concis (< 5000 mots)
-        if (documentMeta.wordCount < 5000) {
-            score *= multipliers.SHORT_DOCUMENT;
-        }
+        // --- MENTIONS_USER_RIGHTS ---
+        const mentionsUserRights = clauseDetection?.detectedClauses?.USER_RIGHTS?.detected ||
+            /right.*(access|deletion|erasure|rectification|portability)/i.test(lowerText) ||
+            /droit.*(accès|effacement|rectification|portabilité)/i.test(lowerText);
+        this._checkItem(results, 'MENTIONS_USER_RIGHTS', checklist.MENTIONS_USER_RIGHTS, () => {
+            return mentionsUserRights;
+        });
+        if (!mentionsUserRights) score += checklist.MENTIONS_USER_RIGHTS.deductionIfMissing;
 
-        // Facile à trouver (lien visible dans le footer/header)
-        if (pageInfo.easyToFind) {
-            score *= multipliers.EASY_TO_FIND;
-        }
+        // --- RIGHT_TO_OPT_OUT ---
+        const hasOptOut = NLP_CONFIG.OPT_OUT_KEYWORDS.some(k => lowerText.includes(k));
+        this._checkItem(results, 'RIGHT_TO_OPT_OUT', checklist.RIGHT_TO_OPT_OUT, () => {
+            return hasOptOut;
+        });
+        if (!hasOptOut) score += checklist.RIGHT_TO_OPT_OUT.deductionIfMissing;
+
+        // --- HAS_CONTACT_INFO ---
+        const hasContact = documentMeta.hasContactInfo || false;
+        this._checkItem(results, 'HAS_CONTACT_INFO', checklist.HAS_CONTACT_INFO, () => {
+            return hasContact;
+        });
+        if (!hasContact) score += checklist.HAS_CONTACT_INFO.deductionIfMissing;
+
+        // --- CLEAR_LANGUAGE ---
+        const readabilityScore = nlpResults?.readability?.score || 50;
+        const hasClearLanguage = readabilityScore >= 45; // Reasonable threshold
+        this._checkItem(results, 'CLEAR_LANGUAGE', checklist.CLEAR_LANGUAGE, () => {
+            return hasClearLanguage;
+        });
+        if (!hasClearLanguage) score += checklist.CLEAR_LANGUAGE.deductionIfMissing;
+
+        // --- HAS_CONSENT_MECHANISM ---
+        const hasConsent = consentBanner?.detected ||
+            /cookie.*(consent|banner|notice)/i.test(lowerText) ||
+            /consent.*mechanism/i.test(lowerText);
+        this._checkItem(results, 'HAS_CONSENT_MECHANISM', checklist.HAS_CONSENT_MECHANISM, () => {
+            return hasConsent;
+        });
+        if (!hasConsent) score += checklist.HAS_CONSENT_MECHANISM.deductionIfMissing;
+
+        // --- CONSENT_HAS_REJECT ---
+        const hasReject = consentBanner?.hasRejectAll || consentBanner?.hasCustomize ||
+            /reject.*cookie/i.test(lowerText) || /refuse.*cookie/i.test(lowerText);
+        this._checkItem(results, 'CONSENT_HAS_REJECT', checklist.CONSENT_HAS_REJECT, () => {
+            return hasReject;
+        });
+        if (!hasReject) score += checklist.CONSENT_HAS_REJECT.deductionIfMissing;
+
+        // --- SPECIFIES_RETENTION ---
+        const specifiesRetention = clauseDetection?.detectedClauses?.DATA_RETENTION?.detected ||
+            /retention.*period/i.test(lowerText) ||
+            /durée.*conservation/i.test(lowerText) ||
+            /\d+\s*(days?|months?|years?|jours?|mois|ans?)/i.test(lowerText);
+        this._checkItem(results, 'SPECIFIES_RETENTION', checklist.SPECIFIES_RETENTION, () => {
+            return specifiesRetention;
+        });
+        if (!specifiesRetention) score += checklist.SPECIFIES_RETENTION.deductionIfMissing;
+
+        // --- SPECIFIES_LEGAL_BASIS ---
+        const specifiesLegalBasis = NLP_CONFIG.LEGAL_BASIS_KEYWORDS.some(k =>
+            lowerText.includes(k.toLowerCase())
+        );
+        this._checkItem(results, 'SPECIFIES_LEGAL_BASIS', checklist.SPECIFIES_LEGAL_BASIS, () => {
+            return specifiesLegalBasis;
+        });
+        if (!specifiesLegalBasis) score += checklist.SPECIFIES_LEGAL_BASIS.deductionIfMissing;
+
+        // --- EASY_TO_FIND ---
+        const easyToFind = pageInfo?.easyToFind || false;
+        this._checkItem(results, 'EASY_TO_FIND', checklist.EASY_TO_FIND, () => {
+            return easyToFind;
+        });
+        if (!easyToFind) score += checklist.EASY_TO_FIND.deductionIfMissing;
+
+        // --- RECENTLY_UPDATED ---
+        const recentlyUpdated = documentMeta.lastUpdated &&
+            !this.isOutdated(documentMeta.lastUpdated);
+        this._checkItem(results, 'RECENTLY_UPDATED', checklist.RECENTLY_UPDATED, () => {
+            return recentlyUpdated;
+        });
+        if (!recentlyUpdated) score += checklist.RECENTLY_UPDATED.deductionIfMissing;
 
         return score;
     }
 
     /**
-     * Applique les pénalités basées sur les clauses détectées
-     * @param {number} currentScore - Score actuel
-     * @param {Object} clauseDetection - Résultats de détection
-     * @returns {number} Score ajusté
+     * Evaluate active violations
      */
-    applyClausePenalties(currentScore, clauseDetection) {
-        let score = currentScore;
+    evaluateViolations(score, data, results) {
+        const { clauseDetection, cookieAnalysis, nlpResults } = data;
+        const violations = this.config.VIOLATION_PENALTIES;
+        const text = data.rawContent || '';
+        const lowerText = text.toLowerCase();
+        const detectedClauses = clauseDetection?.detectedClauses || {};
 
-        if (!clauseDetection || !clauseDetection.detectedClauses) {
-            return score;
+        // --- DATA_SELLING ---
+        if (detectedClauses.DATA_SELLING?.detected) {
+            score += violations.DATA_SELLING.penalty;
+            results.DATA_SELLING = {
+                applied: true,
+                penalty: violations.DATA_SELLING.penalty,
+                label: violations.DATA_SELLING.label
+            };
         }
 
-        const { totalWeight, detectedClauses } = clauseDetection;
-
-        // Pénalité basée sur le poids total des clauses négatives
-        // Plus le poids est élevé, plus la pénalité est importante
-        if (totalWeight.negative > 0) {
-            const penaltyFactor = totalWeight.negative / 10; // Range: 0-10
-            score -= (penaltyFactor * 5); // Max -50 points
+        // --- EXCESSIVE_TRACKING ---
+        const trackerCount = cookieAnalysis?.trackers?.length || 0;
+        if (trackerCount > violations.EXCESSIVE_TRACKING.threshold) {
+            score += violations.EXCESSIVE_TRACKING.penalty;
+            results.EXCESSIVE_TRACKING = {
+                applied: true,
+                penalty: violations.EXCESSIVE_TRACKING.penalty,
+                label: violations.EXCESSIVE_TRACKING.label,
+                details: `${trackerCount} trackers detected`
+            };
         }
 
-        // Bonus pour les clauses positives (droits utilisateur)
-        if (totalWeight.positive > 0) {
-            score += (totalWeight.positive * 2); // Max +10 points
+        // --- SENSITIVE_DATA_NO_CONSENT ---
+        if (detectedClauses.SENSITIVE_DATA_COLLECTION?.detected) {
+            score += violations.SENSITIVE_DATA_NO_CONSENT.penalty;
+            results.SENSITIVE_DATA_NO_CONSENT = {
+                applied: true,
+                penalty: violations.SENSITIVE_DATA_NO_CONSENT.penalty,
+                label: violations.SENSITIVE_DATA_NO_CONSENT.label
+            };
         }
 
-        // Pénalités spécifiques pour clauses critiques
-        for (const [type, data] of Object.entries(detectedClauses)) {
-            if (type === 'DATA_SELLING' && data.detected) {
-                score -= 15; // Pénalité lourde
+        // --- INTERNATIONAL_TRANSFER_NO_SAFEGUARDS ---
+        if (detectedClauses.INTERNATIONAL_TRANSFER?.detected) {
+            // Check if safeguards are mentioned
+            const hasSafeguards = /standard contractual|adequacy decision|binding corporate|privacy shield/i.test(lowerText);
+            if (!hasSafeguards) {
+                score += violations.INTERNATIONAL_TRANSFER_NO_SAFEGUARDS.penalty;
+                results.INTERNATIONAL_TRANSFER_NO_SAFEGUARDS = {
+                    applied: true,
+                    penalty: violations.INTERNATIONAL_TRANSFER_NO_SAFEGUARDS.penalty,
+                    label: violations.INTERNATIONAL_TRANSFER_NO_SAFEGUARDS.label
+                };
             }
-            if (type === 'MANDATORY_ARBITRATION' && data.detected) {
-                score -= 10;
-            }
-            if (type === 'SENSITIVE_DATA_COLLECTION' && data.detected) {
-                score -= 12;
-            }
-            if (type === 'INTERNATIONAL_TRANSFER' && data.detected) {
-                score -= 8;
-            }
         }
 
-        return score;
-    }
-
-    /**
-     * Applique les pénalités liées au document
-     * @param {number} currentScore - Score actuel
-     * @param {Object} nlpResults - Résultats NLP
-     * @param {Object} documentMeta - Métadonnées
-     * @returns {number} Score ajusté
-     */
-    applyDocumentPenalties(currentScore, nlpResults, documentMeta) {
-        let score = currentScore;
-        const penalties = this.config.PENALTIES;
-
-        // Document très long (> 10000 mots)
-        if (nlpResults.stats.wordCount > 10000) {
-            score += penalties.VERY_LONG;
+        // --- MANDATORY_ARBITRATION ---
+        if (detectedClauses.MANDATORY_ARBITRATION?.detected) {
+            score += violations.MANDATORY_ARBITRATION.penalty;
+            results.MANDATORY_ARBITRATION = {
+                applied: true,
+                penalty: violations.MANDATORY_ARBITRATION.penalty,
+                label: violations.MANDATORY_ARBITRATION.label
+            };
         }
 
-        // Langage vague (détection de termes vagues)
+        // --- VAGUE_LANGUAGE ---
         if (this.hasVagueLanguage(nlpResults)) {
-            score += penalties.VAGUE_LANGUAGE;
+            score += violations.VAGUE_LANGUAGE.penalty;
+            results.VAGUE_LANGUAGE = {
+                applied: true,
+                penalty: violations.VAGUE_LANGUAGE.penalty,
+                label: violations.VAGUE_LANGUAGE.label
+            };
         }
 
-        // Politique difficile à trouver
-        if (documentMeta.hardToFind) {
-            score += penalties.HARD_TO_FIND;
+        // --- VERY_LONG_DOCUMENT ---
+        const wordCount = nlpResults?.stats?.wordCount || 0;
+        if (wordCount > violations.VERY_LONG_DOCUMENT.threshold) {
+            score += violations.VERY_LONG_DOCUMENT.penalty;
+            results.VERY_LONG_DOCUMENT = {
+                applied: true,
+                penalty: violations.VERY_LONG_DOCUMENT.penalty,
+                label: violations.VERY_LONG_DOCUMENT.label,
+                details: `${wordCount} words`
+            };
         }
 
-        // Pas d'informations de contact
-        if (!documentMeta.hasContactInfo) {
-            score += penalties.NO_CONTACT_INFO;
-        }
-
-        // Politique obsolète (> 2 ans)
-        if (documentMeta.lastUpdated && this.isOutdated(documentMeta.lastUpdated)) {
-            score += penalties.OUTDATED;
+        // --- THIRD_PARTY_SHARING ---
+        if (detectedClauses.THIRD_PARTY_SHARING?.detected) {
+            score += violations.THIRD_PARTY_SHARING.penalty;
+            results.THIRD_PARTY_SHARING = {
+                applied: true,
+                penalty: violations.THIRD_PARTY_SHARING.penalty,
+                label: violations.THIRD_PARTY_SHARING.label
+            };
         }
 
         return score;
     }
 
     /**
-     * Applique un bonus basé sur la lisibilité
-     * @param {number} currentScore - Score actuel
-     * @param {Object} readability - Scores de lisibilité
-     * @returns {number} Score ajusté
+     * Helper to record checklist item results
      */
-    applyReadabilityBonus(currentScore, readability) {
-        let score = currentScore;
-
-        if (!readability) return score;
-
-        // Bonus pour langage clair (Flesch score > 60)
-        if (readability.score >= 60) {
-            score *= this.config.MULTIPLIERS.CLEAR_LANGUAGE;
-        }
-
-        // Pénalité pour langage très difficile (Flesch score < 30)
-        if (readability.score < 30) {
-            score -= 10;
-        }
-
-        return score;
+    _checkItem(results, key, config, evaluator) {
+        const passed = evaluator();
+        results[key] = {
+            passed,
+            deduction: passed ? 0 : config.deductionIfMissing,
+            label: config.label,
+            labelFr: config.labelFr
+        };
     }
 
     /**
-     * Détermine le niveau de risque basé sur le score
-     * @param {number} score - Score de transparence
-     * @returns {Object} Niveau de risque
+     * Determine risk level based on score (4-tier system)
      */
     determineRiskLevel(score) {
         const levels = this.config.RISK_LEVELS;
 
-        if (score >= levels.LOW.min) {
+        if (score >= levels.EXCELLENT.min) {
             return {
-                level: 'LOW',
-                label: levels.LOW.label,
-                color: levels.LOW.color,
+                level: 'EXCELLENT',
+                label: levels.EXCELLENT.label,
+                labelFr: levels.EXCELLENT.labelFr,
+                color: levels.EXCELLENT.color,
                 icon: '✓',
-                description: 'Politique transparente et respectueuse'
+                description: 'Fully GDPR compliant — transparent and respectful',
+                descriptionFr: 'Pleinement conforme RGPD — transparent et respectueux'
             };
-        } else if (score >= levels.MEDIUM.min) {
+        } else if (score >= levels.GOOD.min) {
             return {
-                level: 'MEDIUM',
-                label: levels.MEDIUM.label,
-                color: levels.MEDIUM.color,
+                level: 'GOOD',
+                label: levels.GOOD.label,
+                labelFr: levels.GOOD.labelFr,
+                color: levels.GOOD.color,
+                icon: '✓',
+                description: 'Mostly compliant — minor improvements possible',
+                descriptionFr: 'Globalement conforme — améliorations mineures possibles'
+            };
+        } else if (score >= levels.CONCERNING.min) {
+            return {
+                level: 'CONCERNING',
+                label: levels.CONCERNING.label,
+                labelFr: levels.CONCERNING.labelFr,
+                color: levels.CONCERNING.color,
                 icon: '!',
-                description: 'Quelques clauses à surveiller'
+                description: 'Notable GDPR gaps — review before accepting',
+                descriptionFr: 'Lacunes RGPD notables — à examiner avant acceptation'
             };
         } else {
             return {
-                level: 'HIGH',
-                label: levels.HIGH.label,
-                color: levels.HIGH.color,
+                level: 'POOR',
+                label: levels.POOR.label,
+                labelFr: levels.POOR.labelFr,
+                color: levels.POOR.color,
                 icon: '⚠',
-                description: 'Nombreuses clauses préoccupantes'
+                description: 'Major GDPR violations — use with extreme caution',
+                descriptionFr: 'Violations majeures du RGPD — à utiliser avec grande précaution'
             };
         }
     }
 
     /**
-     * Calcule la confiance du score
-     * @param {Object} analysisData - Données complètes
-     * @returns {number} Score de confiance (0-1)
+     * Calculate confidence in the score
      */
     calculateScoreConfidence(analysisData) {
         let confidence = 0;
 
-        // Facteurs de confiance
-        const factors = {
-            documentComplete: analysisData.documentMeta.isComplete ? 0.3 : 0.1,
-            clauseDetection: analysisData.clauseDetection.clauseCount > 0 ? 0.3 : 0.1,
-            nlpQuality: analysisData.nlpResults.stats.wordCount > 500 ? 0.2 : 0.1,
-            metadataPresent: analysisData.documentMeta.hasContactInfo ? 0.2 : 0.1
-        };
+        // More data analyzed = higher confidence
+        const hasContent = (analysisData.rawContent?.length || 0) > 200;
+        const hasClauses = (analysisData.clauseDetection?.clauseCount || 0) > 0;
+        const hasNlp = (analysisData.nlpResults?.stats?.wordCount || 0) > 100;
+        const hasMetadata = analysisData.documentMeta?.hasContactInfo;
+        const hasCookieData = !!analysisData.cookieAnalysis;
+        const hasFetchedPages = (analysisData.fetchedPages?.length || 0) > 0;
 
-        confidence = Object.values(factors).reduce((sum, val) => sum + val, 0);
+        if (hasContent) confidence += 0.2;
+        if (hasClauses) confidence += 0.2;
+        if (hasNlp) confidence += 0.15;
+        if (hasMetadata) confidence += 0.15;
+        if (hasCookieData) confidence += 0.15;
+        if (hasFetchedPages) confidence += 0.15;
 
         return Math.min(1, confidence);
     }
 
     /**
-     * Génère une ventilation détaillée du score
-     * @param {Object} analysisData - Données complètes
-     * @returns {Object} Détails du scoring
+     * Generate recommendations
      */
-    getScoreBreakdown(analysisData) {
-        return {
-            baseScore: this.config.BASE_SCORE,
-            adjustments: {
-                clauses: this.getClauseAdjustments(analysisData.clauseDetection),
-                readability: this.getReadabilityAdjustment(analysisData.nlpResults),
-                metadata: this.getMetadataAdjustments(analysisData.documentMeta)
-            }
-        };
-    }
-
-    /**
-     * Obtient les ajustements liés aux clauses
-     * @param {Object} clauseDetection - Détection de clauses
-     * @returns {Array} Liste d'ajustements
-     */
-    getClauseAdjustments(clauseDetection) {
-        const adjustments = [];
-
-        if (!clauseDetection.detectedClauses) return adjustments;
-
-        for (const [type, data] of Object.entries(clauseDetection.detectedClauses)) {
-            if (data.detected) {
-                adjustments.push({
-                    type,
-                    impact: data.weight > 0 ? 'negative' : 'positive',
-                    weight: Math.abs(data.weight),
-                    summary: data.summary
-                });
-            }
-        }
-
-        return adjustments;
-    }
-
-    /**
-     * Obtient l'ajustement de lisibilité
-     * @param {Object} nlpResults - Résultats NLP
-     * @returns {Object} Ajustement
-     */
-    getReadabilityAdjustment(nlpResults) {
-        const { readability } = nlpResults;
-
-        if (!readability) return { impact: 0, reason: 'N/A' };
-
-        if (readability.score >= 60) {
-            return { impact: 15, reason: 'Langage clair et accessible' };
-        } else if (readability.score < 30) {
-            return { impact: -10, reason: 'Langage complexe et difficile' };
-        }
-
-        return { impact: 0, reason: 'Lisibilité moyenne' };
-    }
-
-    /**
-     * Obtient les ajustements de métadonnées
-     * @param {Object} documentMeta - Métadonnées
-     * @returns {Array} Liste d'ajustements
-     */
-    getMetadataAdjustments(documentMeta) {
-        const adjustments = [];
-
-        if (documentMeta.hasPrivacyPolicy) {
-            adjustments.push({ reason: 'Politique de confidentialité présente', impact: 5 });
-        }
-
-        if (documentMeta.hasContactInfo) {
-            adjustments.push({ reason: 'Informations de contact disponibles', impact: 5 });
-        }
-
-        if (documentMeta.isOutdated) {
-            adjustments.push({ reason: 'Politique obsolète', impact: -10 });
-        }
-
-        return adjustments;
-    }
-
-    /**
-     * Génère des recommandations basées sur le score
-     * @param {number} score - Score de transparence
-     * @param {Object} clauseDetection - Détection de clauses
-     * @returns {Array<string>} Liste de recommandations
-     */
-    generateRecommendations(score, clauseDetection) {
+    generateRecommendations(score, checklist, violations, clauseDetection) {
         const recommendations = [];
 
-        if (score < 70) {
-            recommendations.push("⚠️ Lisez attentivement avant d'accepter");
+        // Recommendations from missing checklist items
+        for (const [key, item] of Object.entries(checklist)) {
+            if (!item.passed) {
+                const rec = this._getChecklistRecommendation(key);
+                if (rec) recommendations.push(rec);
+            }
         }
 
-        if (score < 40) {
-            recommendations.push("🔴 Envisagez d'utiliser ce service avec précaution");
+        // Recommendations from violations
+        for (const [key, item] of Object.entries(violations)) {
+            if (item.applied) {
+                const rec = this._getViolationRecommendation(key);
+                if (rec) recommendations.push(rec);
+            }
         }
 
-        // Recommandations spécifiques aux clauses
-        const clauses = clauseDetection.detectedClauses || {};
+        // Positive feedback
+        const passedCount = Object.values(checklist).filter(i => i.passed).length;
+        const totalCount = Object.keys(checklist).length;
 
-        if (clauses.DATA_SELLING?.detected) {
-            recommendations.push("⚠️ Vos données peuvent être vendues - vérifiez les options de désactivation");
-        }
-
-        if (clauses.INTERNATIONAL_TRANSFER?.detected) {
-            recommendations.push("🌍 Transfert de données hors UE - assurez-vous des garanties RGPD");
-        }
-
-        if (clauses.SENSITIVE_DATA_COLLECTION?.detected) {
-            recommendations.push("⚕️ Collecte de données sensibles - vérifiez la nécessité");
-        }
-
-        if (clauses.USER_RIGHTS?.detected) {
-            recommendations.push("✓ Vos droits sont mentionnés - n'hésitez pas à les exercer");
+        if (passedCount === totalCount && Object.keys(violations).length === 0) {
+            recommendations.unshift('✅ Excellent! This site appears fully GDPR compliant.');
+        } else if (passedCount >= totalCount * 0.8) {
+            recommendations.unshift('✓ Good overall compliance with minor improvements needed.');
         }
 
         if (recommendations.length === 0) {
-            recommendations.push("✓ Politique globalement transparente");
+            recommendations.push('ℹ️ Analysis complete. Review the breakdown for details.');
         }
 
-        return recommendations;
+        return recommendations.slice(0, 8); // Max 8 recommendations
     }
 
     /**
-     * Détecte si le langage est vague
-     * @param {Object} nlpResults - Résultats NLP
-     * @returns {boolean} True si vague
+     * Get recommendation text for missing checklist item
+     */
+    _getChecklistRecommendation(key) {
+        const recs = {
+            HAS_PRIVACY_POLICY: '🔴 No privacy policy found — this is a GDPR requirement',
+            HAS_COOKIE_POLICY: '⚠️ No cookie policy found — required if cookies are used',
+            MENTIONS_USER_RIGHTS: '⚠️ User rights (access, deletion, portability) not mentioned',
+            RIGHT_TO_OPT_OUT: '⚠️ No opt-out mechanism mentioned',
+            HAS_CONTACT_INFO: '⚠️ No DPO or privacy contact information found',
+            CLEAR_LANGUAGE: '⚠️ Policy uses complex language — should be easily understandable',
+            HAS_CONSENT_MECHANISM: '⚠️ No cookie consent mechanism detected',
+            CONSENT_HAS_REJECT: '⚠️ Cookie consent doesn\'t offer a reject/decline option',
+            SPECIFIES_RETENTION: 'ℹ️ Data retention periods not specified',
+            SPECIFIES_LEGAL_BASIS: 'ℹ️ Legal basis for data processing not stated',
+            EASY_TO_FIND: 'ℹ️ Privacy policy not easily accessible from main navigation',
+            RECENTLY_UPDATED: 'ℹ️ Privacy policy may be outdated (> 2 years old)'
+        };
+        return recs[key] || null;
+    }
+
+    /**
+     * Get recommendation text for violations
+     */
+    _getViolationRecommendation(key) {
+        const recs = {
+            DATA_SELLING: '🔴 This site may sell your personal data — consider alternatives',
+            EXCESSIVE_TRACKING: '⚠️ Excessive tracking detected — consider using a tracker blocker',
+            NO_OPT_OUT_TRACKERS: '⚠️ Tracking without clear opt-out mechanism',
+            SENSITIVE_DATA_NO_CONSENT: '⚠️ Sensitive data collection detected — verify necessity',
+            INTERNATIONAL_TRANSFER_NO_SAFEGUARDS: '⚠️ Data transferred outside EU without stated GDPR safeguards',
+            MANDATORY_ARBITRATION: '⚠️ Mandatory arbitration clause — limits your legal recourse',
+            VAGUE_LANGUAGE: 'ℹ️ Policy uses vague language (may, might, sometimes)',
+            VERY_LONG_DOCUMENT: 'ℹ️ Excessively long privacy document — may obscure important details',
+            THIRD_PARTY_SHARING: 'ℹ️ Your data may be shared with third parties'
+        };
+        return recs[key] || null;
+    }
+
+    /**
+     * Detect vague language usage
      */
     hasVagueLanguage(nlpResults) {
-        const vagueTerms = ['may', 'might', 'could', 'possible', 'sometimes', 'generally'];
-        const keywords = nlpResults.keywords || [];
-
+        const vagueTerms = ['may', 'might', 'could', 'possible', 'possibly',
+            'sometimes', 'generally', 'usually', 'approximately',
+            'from time to time', 'as needed', 'if applicable'];
+        const keywords = nlpResults?.keywords || [];
         const vagueCount = keywords.filter(k =>
             vagueTerms.includes(k.word.toLowerCase())
         ).length;
-
-        return vagueCount > 5;
+        return vagueCount > 3;
     }
 
     /**
-     * Vérifie si une date est obsolète (> 2 ans)
-     * @param {string|Date} lastUpdated - Date de dernière mise à jour
-     * @returns {boolean} True si obsolète
+     * Check if a date is outdated (> 2 years)
      */
     isOutdated(lastUpdated) {
-        const date = new Date(lastUpdated);
-        const twoYearsAgo = new Date();
-        twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-
-        return date < twoYearsAgo;
+        try {
+            const date = new Date(lastUpdated);
+            if (isNaN(date.getTime())) return true; // Can't parse = assume outdated
+            const twoYearsAgo = new Date();
+            twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+            return date < twoYearsAgo;
+        } catch {
+            return true;
+        }
     }
 
     /**
-     * Compare avec la moyenne du marché
-     * @param {number} score - Score à comparer
-     * @returns {Object} Résultat de comparaison
+     * Compare with market average
      */
     compareWithMarket(score) {
-        const marketAverage = 55; // Score moyen observé
-
-        const difference = score - marketAverage;
-        const percentile = this.calculatePercentile(score);
+        const marketAverage = 62; // Updated average for GDPR era
 
         return {
             score,
             marketAverage,
-            difference,
-            percentile,
-            comparison: difference > 10 ? 'Mieux que la moyenne' :
-                difference < -10 ? 'Moins bien que la moyenne' :
-                    'Dans la moyenne'
+            difference: score - marketAverage,
+            percentile: this.calculatePercentile(score),
+            comparison: score > marketAverage + 10 ? 'Above average' :
+                score < marketAverage - 10 ? 'Below average' : 'Average'
         };
     }
 
     /**
-     * Calcule le percentile du score
-     * @param {number} score - Score à évaluer
-     * @returns {number} Percentile (0-100)
+     * Calculate percentile
      */
     calculatePercentile(score) {
-        // Distribution approximative (courbe normale)
-        // Score moyen = 55, écart-type = 20
-
+        if (score >= 95) return 99;
         if (score >= 90) return 95;
         if (score >= 80) return 85;
         if (score >= 70) return 70;
-        if (score >= 60) return 55;
-        if (score >= 50) return 40;
-        if (score >= 40) return 25;
-        if (score >= 30) return 15;
+        if (score >= 60) return 50;
+        if (score >= 50) return 35;
+        if (score >= 40) return 20;
+        if (score >= 30) return 10;
         return 5;
     }
 }
 
-// Export instance singleton
+// Export singleton
 export const riskScorer = new RiskScorer();
